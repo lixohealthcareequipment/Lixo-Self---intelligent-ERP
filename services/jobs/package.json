@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "agent:google:budget:run": "node --loader ts-node/esm agent/run_optimizer_google_budget.ts"
+    "agent:google:budget:run": "node --loader ts-node/esm agent/run_optimizer_google_budget.ts",
+    "agent:chairman:brief:run": "node --loader ts-node/esm agent/chairman_daily_brief.ts"
   },
   "dependencies": {
     "p-retry": "^6.2.1",

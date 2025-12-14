@@ -1,0 +1,16 @@
+{
+  "name": "lixo-jobs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "agent:google:budget:run": "node --loader ts-node/esm agent/run_optimizer_google_budget.ts"
+  },
+  "dependencies": {
+    "p-retry": "^6.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0"
+  }
+}

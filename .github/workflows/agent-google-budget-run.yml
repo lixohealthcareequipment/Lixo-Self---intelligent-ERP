@@ -1,0 +1,32 @@
+name: Agent - Google Budget - Run
+
+on:
+  schedule:
+    - cron: "00 3 * * *"   # 08:30 IST approx
+  workflow_dispatch: {}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install
+        run: |
+          cd services/jobs
+          npm ci
+
+      - name: Run optimizer
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: gpt-4-mini
+          OPENAI_TIMEOUT_MS: "20000"
+        run: |
+          cd services/jobs
+          npm run agent:google:budget:run

@@ -1,0 +1,43 @@
+
+Folder highlights
+Automated workflows schedule daily briefs and budget operations, with Google Budget optimization running at 08:30 IST.
+
+Google One subscription was canceled … Update your payment method to restore your storage subscription
+name: Agent - Google Budget - Enrich (Resource Names)
+on:
+  workflow_dispatch:
+    inputs:
+      approval_id:
+        description: "Approval batch UUID (optional). If empty, uses latest approved unexecuted."
+        required: false
+        default: ""
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: services/jobs/package-lock.json
+      - name: Install
+        run: |
+          cd services/jobs
+          npm ci
+      - name: Enrich approval payload
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          APPROVAL_ID: ${{ inputs.approval_id }}
+          GOOGLE_ADS_CLIENT_ID: ${{ secrets.GOOGLE_ADS_CLIENT_ID }}
+          GOOGLE_ADS_CLIENT_SECRET: ${{ secrets.GOOGLE_ADS_CLIENT_SECRET }}
+          GOOGLE_ADS_DEVELOPER_TOKEN: ${{ secrets.GOOGLE_ADS_DEVELOPER_TOKEN }}
+          GOOGLE_ADS_REFRESH_TOKEN: ${{ secrets.GOOGLE_ADS_REFRESH_TOKEN }}
+          GOOGLE_ADS_LOGIN_CUSTOMER_ID: ${{ secrets.GOOGLE_ADS_LOGIN_CUSTOMER_ID }}
+          GOOGLE_ADS_CUSTOMER_ID: ${{ secrets.GOOGLE_ADS_CUSTOMER_ID }}
+        run: |
+          cd services/jobs
+          npm run agent:google:budget:enrich

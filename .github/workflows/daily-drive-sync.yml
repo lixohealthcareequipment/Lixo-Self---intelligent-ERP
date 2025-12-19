@@ -1,0 +1,162 @@
+name: Daily Google Drive Sync
+
+on:
+  schedule:
+    # Run daily at 6:00 AM IST (00:30 UTC)
+    - cron: '30 0 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  sync-drive-to-github:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install google-auth-oauthlib google-auth-httplib2 google-api-python-client
+      
+      - name: Download from Google Drive
+        env:
+          GOOGLE_DRIVE_CREDENTIALS: ${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+        run: |
+          python3 << 'EOF'
+          import os
+          import json
+          import base64
+          from google.auth.transport.requests import Request
+          from google.oauth2.credentials import Credentials
+          from google_auth_oauthlib.flow import InstalledAppFlow
+          from googleapiclient.discovery import build
+          from googleapiclient.http import MediaIoBaseDownload
+          import io
+          
+          SCOPES = ['https://www.googleapis.com/auth/drive']
+          DRIVE_FOLDER_ID = os.getenv('GOOGLE_DRIVE_FOLDER_ID')
+          
+          # Decode credentials from base64
+          creds_json = base64.b64decode(os.getenv('GOOGLE_DRIVE_CREDENTIALS')).decode('utf-8')
+          creds_data = json.loads(creds_json)
+          
+          # Create credentials
+          creds = Credentials.from_authorized_user_info(creds_data, SCOPES)
+          
+          # Build Drive service
+          service = build('drive', 'v3', credentials=creds)
+          
+          def download_folder(folder_id, local_path='.'):
+              """Recursively download all files from Google Drive folder"""
+              try:
+                  results = service.files().list(
+                      q=f"'{folder_id}' in parents",
+                      spaces='drive',
+                      fields='files(id, name, mimeType, modifiedTime)',
+                      pageSize=100,
+                      orderBy='name'
+                  ).execute()
+                  
+                  items = results.get('files', [])
+                  print(f'Found {len(items)} items in Drive folder')
+                  
+                  for item in items:
+                      if item['mimeType'] == 'application/vnd.google-apps.folder':
+                          # Create folder and recurse
+                          folder_path = os.path.join(local_path, item['name'])
+                          os.makedirs(folder_path, exist_ok=True)
+                          print(f'Syncing folder: {item["name"]}')
+                          download_folder(item['id'], folder_path)
+                      else:
+                          # Download file
+                          file_path = os.path.join(local_path, item['name'])
+                          print(f'Downloading: {item["name"]}')
+                          
+                          request = service.files().get_media(fileId=item['id'])
+                          fh = io.FileIO(file_path, 'wb')
+                          downloader = MediaIoBaseDownload(fh, request)
+                          done = False
+                          while not done:
+                              status, done = downloader.next_chunk()
+              except Exception as e:
+                  print(f'Error downloading folder: {e}')
+          
+          # Download all files
+          download_folder(DRIVE_FOLDER_ID)
+          print('Drive sync completed!')
+          EOF
+      
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet; then
+            echo "No changes detected"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes detected"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Configure git
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Drive Sync Bot"
+      
+      - name: Create commit
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git add -A
+          git commit -m "chore: sync updates from Google Drive [automated]
+          
+          - Automated daily sync from lixo-ads-agent-mvp-pack folder
+          - Files updated: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+          - Changes applied from Google Drive source"
+      
+      - name: Push changes
+        if: steps.check_changes.outputs.has_changes == 'true'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
+      
+      - name: Create Pull Request (if needed)
+        if: steps.check_changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: sync updates from Google Drive'
+          title: '[Automated] Daily sync from Google Drive'
+          body: |
+            # Automated Google Drive Sync
+            
+            This PR contains updates automatically synced from your Google Drive folder.
+            
+            **Folder:** lixo-ads-agent-mvp-pack  
+            **Time:** ${{ github.event.repository.pushed_at }}  
+            **Status:** Ready for review
+            
+            Changes have been detected and pulled from the Google Drive source.
+          branch: automated-drive-sync
+          delete-branch: true
+      
+      - name: Workflow completion notification
+        if: always()
+        run: |
+          if [ "${{ steps.check_changes.outputs.has_changes }}" = "true" ]; then
+            echo "✅ Sync completed with changes committed"
+          else
+            echo "ℹ️ Sync completed - no changes detected"
+          fi

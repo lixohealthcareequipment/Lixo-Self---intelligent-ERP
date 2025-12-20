@@ -1,4 +1,5 @@
 name = "track"
+keep_vars = true
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
@@ -7,7 +8,7 @@ routes = [
 ]
 
 [env.production]
-vars = { SUPABASE_URL = "", ZOHO_BASE_URL = "https://www.zohoapis.com", ZOHO_ACCOUNTS_URL = "https://accounts.zoho.com", ZOHO_WRITEBACK = "true" }
+vars = { ZOHO_BASE_URL = "https://www.zohoapis.in", ZOHO_ACCOUNTS_URL = "https://accounts.zoho.in", ZOHO_WRITEBACK = "true" }
 
 [triggers]
 crons = []

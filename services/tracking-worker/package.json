@@ -1,0 +1,17 @@
+{
+  "name": "track-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for tracking Zoho events",
+  "main": "src/index.ts",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20231218.0",
+    "typescript": "^5.3.3",
+    "wrangler": "^3.17.0"
+  }
+}

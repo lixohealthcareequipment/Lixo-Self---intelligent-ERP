@@ -1,0 +1,13 @@
+name = "track"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+routes = [
+  { pattern = "track.lixo.in/*", zone_name = "lixo.in" }
+]
+
+[env.production]
+vars = { SUPABASE_URL = "", ZOHO_BASE_URL = "https://www.zohoapis.com", ZOHO_ACCOUNTS_URL = "https://accounts.zoho.com", ZOHO_WRITEBACK = "true" }
+
+[triggers]
+crons = []

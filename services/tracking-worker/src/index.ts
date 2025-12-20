@@ -1,8 +1,67 @@
+// SHA-256 hash helper
+async function sha256Hex(input: string): Promise<string> {
+  const enc = new TextEncoder();
+  const buf = await crypto.subtle.digest("SHA-256", enc.encode(input.trim().toLowerCase()));
+  const bytes = Array.from(new Uint8Array(buf));
+  return bytes.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// DEBUG ENDPOINT - Temporary route for testing Supabase INSERT directly
+async function handleDebugInsertIdentity(request: Request, env: any): Promise<Response> {
+  if (request.method !== "POST") {
+    return new Response(JSON.stringify({ ok: false, error: "method_not_allowed" }), { status: 405, headers: { "Content-Type": "application/json" }});
+  }
+  const ct = request.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) {
+    return new Response(JSON.stringify({ ok: false, error: "content_type_must_be_json", content_type: ct }), { status: 400, headers: { "Content-Type": "application/json" }});
+  }
+
+  const body = await request.json().catch(() => null);
+  if (!body || !body.zoho_lead_id) {
+    return new Response(JSON.stringify({ ok: false, error: "zoho_lead_id_required" }), { status: 400, headers: { "Content-Type": "application/json" }});
+  }
+
+  const zoho_lead_id = String(body.zoho_lead_id);
+  const email = body.email ? String(body.email) : "";
+  const phone = body.phone ? String(body.phone) : "";
+
+  const email_hash = email ? await sha256Hex(email) : null;
+  const phone_hash = phone ? await sha256Hex(phone) : null;
+
+  const url = `${env.SUPABASE_URL}/rest/v1/identity_map`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "apikey": env.SUPABASE_SERVICE_ROLE_KEY,
+      "Authorization": `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "Prefer": "return=representation",
+      "Content-Profile": "prod",
+      "Accept-Profile": "prod"
+    },
+    body: JSON.stringify([{ zoho_lead_id, email_hash, phone_hash }])
+  });
+
+  const text = await res.text();
+  return new Response(JSON.stringify({
+    ok: res.ok,
+    status: res.status,
+    supabase_body_head: text.slice(0, 300),
+    test_id: zoho_lead_id
+  }), { status: res.ok ? 200 : 500, headers: { "Content-Type": "application/json" }});
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const pathname = url.pathname;
     const method = request.method;
+    
+  // DEBUG ENDPOINT ROUTING - Check for debug endpoint first
+  if (pathname === "/v1/debug/insert_identity") {
+    return await handleDebugInsertIdentity(request, env);
+  }
 
     // POST /v1/zoho/lead_created
 

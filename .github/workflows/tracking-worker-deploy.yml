@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
+        shell: bash
         working-directory: services/tracking-worker
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,11 +24,14 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Install deps
+      - name: Install dependencies
         run: npm ci
 
-      - name: Deploy Worker (Wrangler)
+      - name: Deploy worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-                          BUILD_COMMIT: ${{ github.sha }}UILD_COMMIT: ${{ github.sha }}
-        run: npx wrangler deploy --env production --var BUILD_COMMIT:${{ github.sha }}
+          BUILD_COMMIT: ${{ github.sha }}
+        run: |
+          echo "BUILD_COMMIT=$BUILD_COMMIT"
+          npx wrangler --version
+          npx wrangler deploy --env production

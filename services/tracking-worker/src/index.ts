@@ -52,13 +52,29 @@ async function handleDebugInsertIdentity(request: Request, env: any): Promise<Re
   }), { status: res.ok ? 200 : 500, headers: { "Content-Type": "application/json" }});
 }
 
+// VERSION ENDPOINT - Hard proof of which commit is live
+async function handleVersion(request: Request, env: any): Promise<Response> {
+  return new Response(JSON.stringify({
+    ok: true,
+    build_commit: env.BUILD_COMMIT || 'unknown',
+    script: 'track-production',
+    env: 'production'
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const pathname = url.pathname;
     const method = request.method;
     
-  // DEBUG ENDPOINT ROUTING - Check for debug endpoint first
+// VERSION ENDPOINT - Hard proof of which commit is live
+    if (pathname === "/v1/version") {
+      return await handleVersion(request, env);
+    }
+
+    
+    // DEBUG ENDPOINT ROUTING - Check for debug endpoint first
   if (pathname === "/v1/debug/insert_identity || pathname === "/v1/debug/insert_identity/"") {
     return await handleDebugInsertIdentity(request, env);
   }

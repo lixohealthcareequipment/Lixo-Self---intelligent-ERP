@@ -59,7 +59,7 @@ export default {
     const method = request.method;
     
   // DEBUG ENDPOINT ROUTING - Check for debug endpoint first
-  if (pathname === "/v1/debug/insert_identity") {
+  if (pathname === "/v1/debug/insert_identity || pathname === "/v1/debug/insert_identity/"") {
     return await handleDebugInsertIdentity(request, env);
   }
 
@@ -186,8 +186,7 @@ const body = payload
     }
 
     // Fallback
-    return new Response(JSON.stringify({ message: 'Lixo Track Worker' }), {
-      status: 200,
+    return new Response(JSON.stringify({ ok: false, error: "not_found", pathname }), {      status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
   }

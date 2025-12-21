@@ -75,8 +75,7 @@ export default {
 
     
     // DEBUG ENDPOINT ROUTING - Check for debug endpoint first
-  if (pathname === "/v1/debug/insert_identity || pathname === "/v1/debug/insert_identity/"") {
-    return await handleDebugInsertIdentity(request, env);
+if (pathname === "/v1/debug/insert_identity" || pathname === "/v1/debug/insert_identity/") {    return await handleDebugInsertIdentity(request, env);
   }
 
     // POST /v1/zoho/lead_created
@@ -88,8 +87,7 @@ async function supabaseInsertIdentity(env, body) {
 
   const srk = env.SUPABASE_SERVICE_ROLE_KEY;
   if (!base || !srk) {
-    return { ok: false, status: 500, text: "BLOCKED: Supabase secrets missing" };
-  }
+const url = `${base}/rest/v1/identity_map`;  }
 
   // Hard validate required keys (must match table columns exactly)
   const payload = {
@@ -202,9 +200,7 @@ const body = payload
     }
 
     // Fallback
-    return new Response(JSON.stringify({ ok: false, error: "not_found", pathname }), {      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return new Response(JSON.stringify({ ok: false, error: "unknown_v1_route", pathname }), { status: 404, headers: { 'Content-Type': 'application/json' } });
   }
 };
 
